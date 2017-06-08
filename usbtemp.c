@@ -20,29 +20,27 @@
 #define DS18X20_SP_SIZE 9
 #define DS18X20_GENERATOR 0x8c
 
-typedef unsigned char uchar;
-
 /*
    Signals taken from:
    https://www.maximintegrated.com/en/app-notes/index.mvp/id/214
 */
 
-static uchar lsb_crc8(uchar *data_in, unsigned int len, const uchar generator) {
+static unsigned char lsb_crc8(unsigned char *data_in, unsigned int len, const unsigned char generator)
+{
+  unsigned char i, bit_counter, crc = 0;
 
-   uchar i, bit_counter, crc = 0;
-
-   for (i = 0; i < len; i++) {
-      crc ^= *(data_in + i);
-      bit_counter = 8;
-      do {
-         if (crc & 0x01)
-            crc = (((crc >> 1) & 0x7f) ^ generator);
-         else
-            crc = (crc >> 1) & 0x7f;
-         bit_counter--;
-      } while (bit_counter > 0);
-   }
-   return crc;
+  for (i = 0; i < len; i++) {
+    crc ^= *(data_in + i);
+    bit_counter = 8;
+    do {
+      if (crc & 0x01)
+        crc = (((crc >> 1) & 0x7f) ^ generator);
+      else
+        crc = (crc >> 1) & 0x7f;
+        bit_counter--;
+    } while (bit_counter > 0);
+  }
+  return crc;
 }
 
 static int file_exists(char *filename)
@@ -55,7 +53,7 @@ static int file_exists(char *filename)
 static int owReset(int fd)
 {
    int rv;
-   uchar wbuff, rbuff;
+   unsigned char wbuff, rbuff;
    fd_set readset;
    struct timeval timeout_tv;
    struct termios term;
@@ -112,10 +110,10 @@ static int owReset(int fd)
    return rv;
 }
 
-static uchar owWriteByte(int fd, uchar wbuff)
+static unsigned char owWriteByte(int fd, unsigned char wbuff)
 {
    char buf[8];
-   uchar rbuff, i;
+   unsigned char rbuff, i;
    size_t remaining, rbytes;
    fd_set readset;
    struct timeval timeout_tv;
@@ -156,12 +154,12 @@ static uchar owWriteByte(int fd, uchar wbuff)
    return rbuff;
 }
 
-static uchar owReadByte(int fd)
+static unsigned char owReadByte(int fd)
 {
    return owWriteByte(fd, 0xff);
 }
 
-void warn_owWriteByte(int fd, uchar wbuff)
+void warn_owWriteByte(int fd, unsigned char wbuff)
 {
    if (owWriteByte(fd, wbuff) != wbuff)
       fprintf(stderr, "Warining, not expected sensor response!\n");
@@ -226,7 +224,7 @@ int DS18B20_acquire(int fd)
    char timebuf[40];
    unsigned short T;
    float temperature;
-   uchar i, crc, sp_sensor[DS18X20_SP_SIZE];
+   unsigned char i, crc, sp_sensor[DS18X20_SP_SIZE];
 
    if (owReset(fd) < 0) {
       fprintf(stderr, "Error, no sensor found!\n");
