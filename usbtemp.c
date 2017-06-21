@@ -55,9 +55,9 @@ static unsigned char lsb_crc8(unsigned char *data_in, unsigned int len, const un
     do {
       if (crc & 0x01)
         crc = (((crc >> 1) & 0x7f) ^ generator);
-     else
+      else
         crc = (crc >> 1) & 0x7f;
-        bit_counter--;
+      bit_counter--;
     } while (bit_counter > 0);
   }
   return crc;
@@ -111,8 +111,9 @@ static int owReset(int fd)
       rv = -1;
     }
   }
-  else
+  else {
     rv = -1; /* Timed out or interrupt. */
+  }
 
   term.c_cflag &= ~CSIZE | CS6;
   cfsetispeed(&term, B115200);
@@ -160,9 +161,10 @@ static unsigned char owWriteByte(int fd, unsigned char wbuff)
       else
         return 0xff;
     }
-    else
+    else {
       /* At last timeout will terminate while-loop. */
       return 0xff;
+    }
   }
   return rbuff;
 }
