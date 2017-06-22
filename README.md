@@ -17,3 +17,9 @@ May 13 17:05:02 Sensor C: 22.62
 ```
 
 Date/time formatting is `%b %d %H:%M:%S`.
+
+### Licence
+
+Copyright 2017, jaka
+
+Software is released under the 2-Clause BSD License.
