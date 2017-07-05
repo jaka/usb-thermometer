@@ -30,6 +30,7 @@ static char* ut_msgs[] = {
   "Error, sensor not found!", /* 6 */
   "Error, sensor CRC mismatch!",
   "Warining, not expected sensor response!",
+  "Error, could not send data"
 };
 
 int ut_errno;
@@ -66,6 +67,7 @@ static unsigned char lsb_crc8(unsigned char *data_in, unsigned int len, const un
 static int owReset(int fd)
 {
   int rv;
+  int wbytes, rbytes;
   unsigned char wbuff, rbuff;
   fd_set readset;
   struct timeval timeout_tv;
@@ -84,7 +86,11 @@ static int owReset(int fd)
 
   /* Send the reset pulse. */
   wbuff = 0xf0;
-  write(fd, &wbuff, 1);
+  wbytes = write(fd, &wbuff, 1);
+  if (wbytes != 1) {
+    ut_errno = 9;
+    return -1;
+  }
 
   timeout_tv.tv_usec = 0;
   timeout_tv.tv_sec = TIMEOUT;
@@ -95,7 +101,9 @@ static int owReset(int fd)
   if (select(fd + 1, &readset, NULL, NULL, &timeout_tv) > 0) {
 
     if (FD_ISSET(fd, &readset)) {
-      read(fd, &rbuff, 1);
+      rbytes = read(fd, &rbuff, 1);
+      if (rbytes != 1)
+        return -1;
       switch (rbuff) {
         case 0:
           /* Ground. */
@@ -127,6 +135,7 @@ static int owReset(int fd)
 static unsigned char owWriteByte(int fd, unsigned char wbuff)
 {
   char buf[8];
+  int wbytes;
   unsigned char rbuff, i;
   size_t remaining, rbytes;
   fd_set readset;
@@ -136,7 +145,11 @@ static unsigned char owWriteByte(int fd, unsigned char wbuff)
 
   for (i = 0; i < 8; i++)
     buf[i] = (wbuff & (1 << (i & 0x7))) ? 0xff : 0x00;
-  write(fd, buf, 8);
+  wbytes = write(fd, buf, 8);
+  if (wbytes != 8) {
+    ut_errno = 9;
+    return -1;
+  }
 
   timeout_tv.tv_usec = 0;
   timeout_tv.tv_sec = 1;
