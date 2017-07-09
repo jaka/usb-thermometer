@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #define TIMEOUT 1
+#define DS18X20_ROM_SIZE 8
 #define DS18X20_SP_SIZE 9
 #define DS18X20_GENERATOR 0x8c
 
@@ -34,6 +35,12 @@ static char* ut_msgs[] = {
 };
 
 int ut_errno;
+
+enum {
+  HELP,
+  ACQUIRE_TEMP,
+  READ_ROM
+};
 
 /*
   Signals taken from:
@@ -246,16 +253,16 @@ int serial_init(char *serial_port)
 int DS18B20_measure(int fd)
 {
   if (owReset(fd) < 0) {
-   ut_errno = 6;
-   return -1;
+    ut_errno = 6;
+    return -1;
   }
   if (warn_owWriteByte(fd, 0xcc) < 0) {
-   ut_errno = 8;
-   return -1;
+    ut_errno = 8;
+    return -1;
   }
   if (warn_owWriteByte(fd, 0x44) < 0) {
-   ut_errno = 8;
-   return -1;
+    ut_errno = 8;
+    return -1;
   }
   return 0;
 }
@@ -312,8 +319,28 @@ int DS18B20_acquire(int fd)
   return 0;
 }
 
-#define OPTS_HELP 1
-#define OPTS_VERBOSE (1 << 1)
+int DS18B20_rom(int fd)
+{
+  unsigned char i, rom[DS18X20_ROM_SIZE];
+
+  if (owReset(fd) < 0) {
+    ut_errno = 6;
+    return -1;
+  }
+  if (warn_owWriteByte(fd, 0x33) < 0) {
+    ut_errno = 8;
+    return -1;
+  }
+
+  for (i = 0; i < DS18X20_ROM_SIZE; i++)
+    rom[i] = owReadByte(fd);
+
+  printf("ROM: ");
+  for (i = 0; i < DS18X20_ROM_SIZE; i++)
+    printf("%02x", rom[i]);
+  printf("\n");
+  return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -321,16 +348,20 @@ int main(int argc, char **argv)
   char c;
   int fd;
   char *serial_port = NULL;
-  int opts = OPTS_VERBOSE;
+  int verbose = 1;
   int rv = 0;
+  int action = ACQUIRE_TEMP;
 
-  while ((c = getopt(argc, argv, "hqs:")) != -1) {
+  while ((c = getopt(argc, argv, "hrqs:")) != -1) {
     switch (c) {
       case 'h':
-        opts |= OPTS_HELP;
+        action = HELP;
+        break;
+      case 'r':
+        action = READ_ROM;
         break;
       case 'q':
-        opts &= ~OPTS_VERBOSE;
+        verbose = 0;
         break;
       case 's':
         serial_port = optarg;
@@ -340,13 +371,14 @@ int main(int argc, char **argv)
     }
   }
 
-  if (opts & OPTS_HELP)
-    opts |= OPTS_VERBOSE;
+  if (action == HELP)
+    verbose = 1;
 
-  if (opts & OPTS_VERBOSE)
+  if (verbose)
     printf("USB Thermometer CLI v1 Copyright 2017 jaka\n");
 
-  if (opts & OPTS_HELP) {
+  if (action == HELP) {
+    printf("\t-r\tPrint ROM\n");
     printf("\t-q\tQuiet mode\n");
     printf("\t-s\tSet serial port\n");
     return 0;
@@ -354,29 +386,40 @@ int main(int argc, char **argv)
 
   if (!serial_port)
     serial_port = "/dev/ttyUSB0";
-  if (opts & OPTS_VERBOSE)
+  if (verbose)
     printf("Using serial port: %s\n", serial_port);
 
   fd = serial_init(serial_port);
   if (fd > 0) {
 
-    if (DS18B20_measure(fd) < 0) {
-      fprintf(stderr, "%s\n", ut_errmsg());
-      close(fd);
-      return -1;
-    }
+    switch (action) {
+      
+      case ACQUIRE_TEMP:
 
-    wait_tv.tv_usec = 0;
-    wait_tv.tv_sec = 1;
+        if (DS18B20_measure(fd) < 0) {
+          fprintf(stderr, "%s\n", ut_errmsg());
+          close(fd);
+          return -1;
+        }
+        wait_tv.tv_usec = 0;
+        wait_tv.tv_sec = 1;
+        if (verbose)
+          printf("Waiting for response ...\n");
+        select(0, NULL, NULL, NULL, &wait_tv);
+        if (DS18B20_acquire(fd) < 0) {
+          fprintf(stderr, "%s\n", ut_errmsg());
+          rv = -1;
+        }
+        break;
 
-    if (opts & OPTS_VERBOSE)
-      printf("Waiting for response ...\n");
+      case READ_ROM:
 
-    select(0, NULL, NULL, NULL, &wait_tv);
+        if (DS18B20_rom(fd) < 0) {
+          fprintf(stderr, "%s\n", ut_errmsg());
+          rv = -1;
+        }
+        break;
 
-    if (DS18B20_acquire(fd) < 0) {
-      fprintf(stderr, "%s\n", ut_errmsg());
-      rv = -1;
     }
 
     close(fd);
