@@ -18,6 +18,11 @@ May 13 17:05:02 Sensor C: 22.62
 
 Date/time formatting is `%b %d %H:%M:%S`.
 
+### Troubleshooting
+
+User, running binary, must have permissions to write to `/dev/ttyUSB0` char device.
+Usually, `adduser` or `chmod o+rw` helps.
+
 ### Licence
 
 Copyright 2017, jaka
