@@ -203,13 +203,13 @@ int warn_owWriteByte(int fd, unsigned char wbuff)
   return 0;
 }
 
-static int file_exists(char *filename)
+static int file_exists(const char *filename)
 {
   struct stat st;
   return (stat(filename, &st) == 0);
 }
 
-int serial_init(char *serial_port)
+int serial_init(const char *serial_port)
 {
   int fd;
   struct termios term;
