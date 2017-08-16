@@ -20,8 +20,8 @@ Date/time formatting is `%b %d %H:%M:%S`.
 
 ### Troubleshooting
 
-User, running binary, must have permissions to write to `/dev/ttyUSB0` char device.
-Usually, `adduser` or `chmod o+rw` helps.
+User, running binary, must have permissions to write to `/dev/ttyUSB0` or similar character device.
+Usually, `adduser` to `dialout` group or `chmod o+rw` the character device helps.
 
 ### Licence
 

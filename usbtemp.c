@@ -399,7 +399,7 @@ int main(int argc, char **argv)
   if (fd > 0) {
 
     switch (action) {
-      
+
       case ACQUIRE_TEMP:
 
         if (DS18B20_measure(fd) < 0) {
