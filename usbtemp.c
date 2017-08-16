@@ -297,7 +297,7 @@ int DS18B20_acquire(int fd)
     return -1;
   }
 
-  crc = lsb_crc8(&sp_sensor[0], DS18X20_SP_SIZE - 1, 0x8c);
+  crc = lsb_crc8(&sp_sensor[0], DS18X20_SP_SIZE - 1, DS18X20_GENERATOR);
   if (sp_sensor[DS18X20_SP_SIZE - 1] != crc) {
     ut_errno = 7;
     return -1;
@@ -321,7 +321,7 @@ int DS18B20_acquire(int fd)
 
 int DS18B20_rom(int fd)
 {
-  unsigned char i, rom[DS18X20_ROM_SIZE];
+  unsigned char i, crc, rom[DS18X20_ROM_SIZE];
 
   if (owReset(fd) < 0) {
     ut_errno = 6;
@@ -334,6 +334,12 @@ int DS18B20_rom(int fd)
 
   for (i = 0; i < DS18X20_ROM_SIZE; i++)
     rom[i] = owReadByte(fd);
+
+  crc = lsb_crc8(&rom[0], DS18X20_ROM_SIZE - 1, DS18X20_GENERATOR);
+  if (rom[DS18X20_ROM_SIZE - 1] != crc) {
+    ut_errno = 7;
+    return -1;
+  }
 
   printf("ROM: ");
   for (i = 0; i < DS18X20_ROM_SIZE; i++)
