@@ -3,7 +3,7 @@
 Read temperature from USB thermometer (with DS18B20 1–wire probe).
 
 Supported devices:
-* [KEL USB thermometer](http://kel.si/)
+* [KEL USB Thermometer](https://usbtemp.com/)
 
 ### How to run it
 
